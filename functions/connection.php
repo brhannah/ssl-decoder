@@ -206,6 +206,19 @@ function test_sslv2($ip, $port) {
   return $result;
 }
 
+function test_sslv3($ip, $port) {
+  global $timeout;
+  $exitstatus = 0;
+  $output = 0;
+  exec('echo | timeout ' . $timeout . ' openssl s_client -connect "' . escapeshellcmd($ip) . ':' . escapeshellcmd($port) . '" -ssl3 2>&1 >/dev/null', $output, $exitstatus); 
+  if ($exitstatus == 0) { 
+    $result = true;
+  } else {
+    $result = false;
+  }
+  return $result;
+}
+
 function conn_compression($host, $ip, $port) {
   global $timeout;
   // OpenSSL 1.1.0 has ipv6 support: https://rt.openssl.org/Ticket/Display.html?id=1832
@@ -239,21 +252,7 @@ function ssl_conn_protocols($host, $ip, $port) {
                    'tlsv1.2' => false);
 
   $results['sslv2'] = test_sslv2($host, $port);
-
-  $stream_sslv3 = stream_context_create (array("ssl" => 
-    array("verify_peer" => false,
-      "capture_session_meta" => true,
-      "verify_peer_name" => false,
-      "peer_name" => $host,
-      "allow_self_signed" => true,
-      'crypto_method' => STREAM_CRYPTO_METHOD_SSLv3_CLIENT,
-      "sni_enabled" => true)));
-  $read_stream_sslv3 = stream_socket_client("sslv3://$ip:$port", $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT, $stream_sslv3);
-  if ( $read_stream_sslv3 === false ) {
-    $results['sslv3'] = false;
-  } else {
-    $results['sslv3'] = true;
-  }
+  $results['sslv3'] = test_sslv3($host, $port);
 
   $stream_tlsv10 = stream_context_create (array("ssl" => 
     array("verify_peer" => false,
